@@ -133,17 +133,11 @@ contract StandardToken is Token {
 
 
 /**
- * Arcade City crowdsale crowdsale contract.
- *
- * Security criteria evaluated against http://ethereum.stackexchange.com/questions/8551/methodological-security-review-of-a-smart-contract
- *
+ * PolyCoinss crowdsale crowdsale contract.
  *
  */
-contract PolyCoin is StandardToken, SafeMath {
+contract PolyCoins is StandardToken,SafeMath {
 
-    string public name = "PolyCoin";
-    string public symbol = "POLY";
-    uint public decimals = 18;
     uint public startBlock; //crowdsale start block (set in constructor)
     uint public endBlock; //crowdsale end block (set in constructor)
 
@@ -153,18 +147,14 @@ contract PolyCoin is StandardToken, SafeMath {
     address public multisig = 0x0;
 
     address public owner = 0x0;
-    bool public marketactive = false;
+ //   bool public marketactive = false;
 
-    uint public etherCap = 672000 * 10**18; //max amount raised during crowdsale (8.5M USD worth of ether will be measured with a moving average market price at beginning of the crowdsale)
-    bool public halted = false; //the founder address can set this to true to halt the crowdsale due to emergency
     event Buy(address indexed sender, uint eth, uint fbt);
 
-    function PolyCoin(address multisigInput, uint startBlockInput, uint endBlockInput) {
+    function PolyCoins(uint a, uint b, uint c,uint d,uint e,uint f) {
         owner = msg.sender;
-        multisig = multisigInput;
-
-        startBlock = startBlockInput;
-        endBlock = endBlockInput;
+        startBlock = block.number + 10;
+        endBlock = startBlock + 19378; // 3.14 days
     }
 
    
@@ -175,66 +165,19 @@ contract PolyCoin is StandardToken, SafeMath {
     // price() exposed for unit tests
     function testPrice(uint blockNumber) constant returns(uint) {
         if (blockNumber<startBlock || blockNumber>endBlock) return 0; // inactive
-        return 75 + 4*(endBlock - blockNumber)/(endBlock - startBlock + 1)*34/4; //crowdsale price
+        return a*blockNumber*blockNumber*blockNumber*blockNumber*blockNumber + b*blockNumber*blockNumber*blockNumber*blockNumber + c*blockNumber*blockNumber*blockNumber + d*blockNumber*blockNumber + e*blockNumber + f; //crowdsale price
     }
 
-    /**
-     * Emergency Stop crowdsale.
-     *
-     *  Applicable tests:
-     *
-     * - Test unhalting, buying, and succeeding
-     */
-    function halt() {
-        if (msg.sender!=founder && msg.sender != developer) throw;
-        halted = true;
-    }
 
-    function unhalt() {
-        if (msg.sender!=founder && msg.sender != developer) throw;
-        halted = false;
-    }
-
-    /**
-     * ERC 20 Standard Token interface transfer function
-     *
-     * Prevent transfers until token sale is over.
-     *
-     * Applicable tests:
-     *
-     * - Test transfer after restricted period
-     * - Test transfer after market activated
-     */
-    function transfer(address _to, uint256 _value) returns (bool success) {
-        if (block.number <= endBlock && marketactive == false) throw;
-        return super.transfer(_to, _value);
-    }
-    /**
-     * ERC 20 Standard Token interface transfer function
-     *
-     * Prevent transfers until token sale is over.
-     */
-    function transferFrom(address _from, address _to, uint256 _value) returns (bool success) {
-        if (block.number <= endBlock && marketactive == false) throw;
-        return super.transferFrom(_from, _to, _value);
-    }
 
     /**
      * Direct deposits buys tokens
      */
     function() payable {
-        if (block.number<startBlock || block.number>endBlock || safeAdd(presaleEtherRaised,msg.value)>etherCap || halted) throw;
+        if (block.number<startBlock || block.number>endBlock) throw;
         uint tokens = safeMul(msg.value, price());
         balances[msg.sender] = safeAdd(balances[msg.sender], tokens);
         totalSupply = safeAdd(totalSupply, tokens);
-        presaleEtherRaised = safeAdd(presaleEtherRaised, msg.value);
-
-        if (!multisig.send(msg.value)) throw; //immediately send Ether to multisig address
-
-        // if etherCap is reached - activate the market
-        if (presaleEtherRaised == etherCap && !marketactive){
-            marketactive = true;
-        }
 
         Buy(msg.sender, msg.value, tokens);
     }
