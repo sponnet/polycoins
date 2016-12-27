@@ -1,55 +1,57 @@
-contract('MetaCoin', function(accounts) {
-  it("should put 10000 MetaCoin in the first account", function() {
-    var meta = MetaCoin.deployed();
+contract('PolyCoins', function(accounts) {
+  var polycoinscontract;
+  var token_buyer = accounts[0];
 
-    return meta.getBalance.call(accounts[0]).then(function(balance) {
-      assert.equal(balance.valueOf(), 10000, "10000 wasn't in the first account");
+  var self = this;
+
+  describe('Deploy PolyCoins token', function() {
+    it("should deploy PolyCoins contract", function(done) {
+
+      PolyCoins.new(
+        1, 1, 1, 1, 1, 1, 1e18
+      ).then(function(instance) {
+        self.polycoinscontract = instance;
+        assert.isNotNull(polycoinscontract);
+        done();
+      });
     });
-  });
-  it("should call a function that depends on a linked library", function() {
-    var meta = MetaCoin.deployed();
-    var metaCoinBalance;
-    var metaCoinEthBalance;
 
-    return meta.getBalance.call(accounts[0]).then(function(outCoinBalance) {
-      metaCoinBalance = outCoinBalance.toNumber();
-      return meta.getBalanceInEth.call(accounts[0]);
-    }).then(function(outCoinBalanceEth) {
-      metaCoinEthBalance = outCoinBalanceEth.toNumber();
-    }).then(function() {
-      assert.equal(metaCoinEthBalance, 2 * metaCoinBalance, "Library function returned unexpeced function, linkage may be broken");
+
+    it("token_buyer should have 0 PolyCoins tokens", function(done) {
+      return self.polycoinscontract.balanceOf.call(token_buyer).then(function(balance) {
+        assert.equal(balance.valueOf(), 0, "account not empty");
+        done();
+      });
     });
-  });
-  it("should send coin correctly", function() {
-    var meta = MetaCoin.deployed();
 
-    // Get initial balances of first and second account.
-    var account_one = accounts[0];
-    var account_two = accounts[1];
+    it("should accept ETH and mint tokens", function(done) {
 
-    var account_one_starting_balance;
-    var account_two_starting_balance;
-    var account_one_ending_balance;
-    var account_two_ending_balance;
+      console.log('tokenbuyer ETH balance=', self.web3.fromWei(self.web3.eth.getBalance(token_buyer), 'ether').toNumber());
 
-    var amount = 10;
+      self.web3.eth.sendTransaction({
+        from: token_buyer,
+        to: self.polycoinscontract.address,
+        value: 1e18,
+      }, function(r, s) {
+        try {
 
-    return meta.getBalance.call(account_one).then(function(balance) {
-      account_one_starting_balance = balance.toNumber();
-      return meta.getBalance.call(account_two);
-    }).then(function(balance) {
-      account_two_starting_balance = balance.toNumber();
-      return meta.sendCoin(account_two, amount, {from: account_one});
-    }).then(function() {
-      return meta.getBalance.call(account_one);
-    }).then(function(balance) {
-      account_one_ending_balance = balance.toNumber();
-      return meta.getBalance.call(account_two);
-    }).then(function(balance) {
-      account_two_ending_balance = balance.toNumber();
+          done();
+        } catch (e) {
+          assert.fail('this function should not throw');
+          done();
+        }
+      });
+    });
 
-      assert.equal(account_one_ending_balance, account_one_starting_balance - amount, "Amount wasn't correctly taken from the sender");
-      assert.equal(account_two_ending_balance, account_two_starting_balance + amount, "Amount wasn't correctly sent to the receiver");
+
+    it("token_buyer should have tokens", function(done) {
+      console.log('tokenbuyer ETH balance=', self.web3.fromWei(self.web3.eth.getBalance(token_buyer), 'ether').toNumber());
+      self.polycoinscontract.balanceOf.call(token_buyer).then(function(balance) {
+        console.log('balance', balance.valueOf());
+        assert.isNotNull(balance.valueOf(), "purchase did not work");
+        process.exit();
+        done();
+      });
     });
   });
 });

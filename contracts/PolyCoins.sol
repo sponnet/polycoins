@@ -8,19 +8,19 @@ pragma solidity ^0.4.2;
 contract SafeMath {
   //internals
 
-  function safeMul(uint a, uint b) internal returns (uint) {
-    uint c = a * b;
+  function safeMul(int a, int b) internal returns (int) {
+    int c = a * b;
     assert(a == 0 || c / a == b);
     return c;
   }
 
-  function safeSub(uint a, uint b) internal returns (uint) {
+  function safeSub(int a, int b) internal returns (int) {
     assert(b <= a);
     return a - b;
   }
 
-  function safeAdd(uint a, uint b) internal returns (uint) {
-    uint c = a + b;
+  function safeAdd(int a, int b) internal returns (int) {
+    int c = a + b;
     assert(c>=a && c>=b);
     return c;
   }
@@ -38,38 +38,38 @@ contract SafeMath {
 contract Token {
 
     /// @return total amount of tokens
-    function totalSupply() constant returns (uint256 supply) {}
+    function totalSupply() constant returns (int supply) {}
 
     /// @param _owner The address from which the balance will be retrieved
     /// @return The balance
-    function balanceOf(address _owner) constant returns (uint256 balance) {}
+    function balanceOf(address _owner) constant returns (int balance) {}
 
     /// @notice send `_value` token to `_to` from `msg.sender`
     /// @param _to The address of the recipient
     /// @param _value The amount of token to be transferred
     /// @return Whether the transfer was successful or not
-    function transfer(address _to, uint256 _value) returns (bool success) {}
+    function transfer(address _to, int _value) returns (bool success) {}
 
     /// @notice send `_value` token to `_to` from `_from` on the condition it is approved by `_from`
     /// @param _from The address of the sender
     /// @param _to The address of the recipient
     /// @param _value The amount of token to be transferred
     /// @return Whether the transfer was successful or not
-    function transferFrom(address _from, address _to, uint256 _value) returns (bool success) {}
+    function transferFrom(address _from, address _to, int _value) returns (bool success) {}
 
     /// @notice `msg.sender` approves `_addr` to spend `_value` tokens
     /// @param _spender The address of the account able to transfer the tokens
     /// @param _value The amount of wei to be approved for transfer
     /// @return Whether the approval was successful or not
-    function approve(address _spender, uint256 _value) returns (bool success) {}
+    function approve(address _spender, int _value) returns (bool success) {}
 
     /// @param _owner The address of the account owning tokens
     /// @param _spender The address of the account able to transfer the tokens
     /// @return Amount of remaining tokens allowed to spent
-    function allowance(address _owner, address _spender) constant returns (uint256 remaining) {}
+    function allowance(address _owner, address _spender) constant returns (int remaining) {}
 
-    event Transfer(address indexed _from, address indexed _to, uint256 _value);
-    event Approval(address indexed _owner, address indexed _spender, uint256 _value);
+    event Transfer(address indexed _from, address indexed _to, int _value);
+    event Approval(address indexed _owner, address indexed _spender, int _value);
 
 }
 
@@ -84,7 +84,7 @@ contract StandardToken is Token {
      * Reviewed:
      * - Interger overflow = OK, checked
      */
-    function transfer(address _to, uint256 _value) returns (bool success) {
+    function transfer(address _to, int256 _value) returns (bool success) {
         //Default assumes totalSupply can't be over max (2^256 - 1).
         //If your token leaves out totalSupply and can issue more tokens as time goes on, you need to check if it doesn't wrap.
         //Replace the if with this one instead.
@@ -97,7 +97,7 @@ contract StandardToken is Token {
         } else { return false; }
     }
 
-    function transferFrom(address _from, address _to, uint256 _value) returns (bool success) {
+    function transferFrom(address _from, address _to, int256 _value) returns (bool success) {
         //same as above. Replace this line with the following if you want to protect against wrapping uints.
         if (balances[_from] >= _value && allowed[_from][msg.sender] >= _value && balances[_to] + _value > balances[_to]) {
         //if (balances[_from] >= _value && allowed[_from][msg.sender] >= _value && _value > 0) {
@@ -109,25 +109,25 @@ contract StandardToken is Token {
         } else { return false; }
     }
 
-    function balanceOf(address _owner) constant returns (uint256 balance) {
+    function balanceOf(address _owner) constant returns (int256 balance) {
         return balances[_owner];
     }
 
-    function approve(address _spender, uint256 _value) returns (bool success) {
+    function approve(address _spender, int256 _value) returns (bool success) {
         allowed[msg.sender][_spender] = _value;
         Approval(msg.sender, _spender, _value);
         return true;
     }
 
-    function allowance(address _owner, address _spender) constant returns (uint256 remaining) {
+    function allowance(address _owner, address _spender) constant returns (int256 remaining) {
       return allowed[_owner][_spender];
     }
 
-    mapping(address => uint256) balances;
+    mapping(address => int) balances;
 
-    mapping (address => mapping (address => uint256)) allowed;
+    mapping (address => mapping (address => int256)) allowed;
 
-    uint256 public totalSupply;
+    int256 public totalSupply;
 
 }
 
@@ -138,48 +138,60 @@ contract StandardToken is Token {
  */
 contract PolyCoins is StandardToken,SafeMath {
 
-    uint public startBlock; //crowdsale start block (set in constructor)
-    uint public endBlock; //crowdsale end block (set in constructor)
+    uint startBlock; //crowdsale start block (set in constructor)
+    uint endBlock; //crowdsale end block (set in constructor)
 
-    // Initial multisig address (set in constructor)
-    // All deposited ETH will be instantly forwarded to this address.
-    // Address is a multisig wallet.
-    address public multisig = 0x0;
+    int a;
+    int b;
+    int c;
+    int d;
+    int e;
+    int f;
+
+    uint cap;   
 
     address public owner = 0x0;
- //   bool public marketactive = false;
 
     event Buy(address indexed sender, uint eth, uint fbt);
 
-    function PolyCoins(uint a, uint b, uint c,uint d,uint e,uint f) {
+    function PolyCoins(int _a, int _b, int _c,int _d,int _e,int _f,int cap) {
         owner = msg.sender;
-        startBlock = block.number + 10;
+        startBlock = block.number;
         endBlock = startBlock + 19378; // 3.14 days
+        a = _a;
+        b = _b;
+        c = _c;
+        d = _d;
+        e = _e;
+        f = _f;
     }
 
    
-    function price() constant returns(uint) {
-        return testPrice(block.number);        
+    function price() constant returns(int) {
+        return testPrice(block.number-(startBlock+19378)/2);        
     }
 
     // price() exposed for unit tests
-    function testPrice(uint blockNumber) constant returns(uint) {
+    function testPrice(uint _blockNumber) constant returns(int) {
+        uint blockNumber = _blockNumber;
         if (blockNumber<startBlock || blockNumber>endBlock) return 0; // inactive
-        return a*blockNumber*blockNumber*blockNumber*blockNumber*blockNumber + b*blockNumber*blockNumber*blockNumber*blockNumber + c*blockNumber*blockNumber*blockNumber + d*blockNumber*blockNumber + e*blockNumber + f; //crowdsale price
+        int tmp = a*blockNumber*blockNumber*blockNumber*blockNumber*blockNumber + b*blockNumber*blockNumber*blockNumber*blockNumber + c*blockNumber*blockNumber*blockNumber + d*blockNumber*blockNumber + e*blockNumber + f;
+        if (tmp<0){
+            tmp = tmp * -1;
+        }
+        return tmp;
     }
-
-
 
     /**
      * Direct deposits buys tokens
      */
     function() payable {
         if (block.number<startBlock || block.number>endBlock) throw;
-        uint tokens = safeMul(msg.value, price());
-        balances[msg.sender] = safeAdd(balances[msg.sender], tokens);
-        totalSupply = safeAdd(totalSupply, tokens);
+        int polyval = safeMul(msg.value, price());
+        balances[msg.sender] = safeAdd(balances[msg.sender],polyval );
+        totalSupply = safeAdd(totalSupply, polyval);
 
-        Buy(msg.sender, msg.value, tokens);
+        Buy(msg.sender, msg.value,polyval );
     }
 
 }
